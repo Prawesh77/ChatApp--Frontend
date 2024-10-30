@@ -1,4 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { io, Socket } from 'socket.io-client';
+const token = localStorage.getItem('accessToken');
+
+const socket: Socket = io(`http://localhost:3000?token=${token}`);
 
 const ChatSection: React.FC = () => {
   const [messages, setMessages] = useState([
@@ -7,8 +11,20 @@ const ChatSection: React.FC = () => {
   ]);
   const [newMessage, setNewMessage] = useState('');
 
+  useEffect(() => {
+    socket.on('receive-message', (data) => {
+      setMessages((prevMessages) => [...prevMessages, { id: prevMessages.length + 1, sender: 'Ram', text: data }]);
+    });
+
+    return () => {
+      socket.off('receive-message');
+    };
+  }, []);
+
   const handleSendMessage = () => {
     if (newMessage.trim()) {
+      socket.emit('send-message', newMessage);
+      console.log('sent')
       setMessages([...messages, { id: messages.length + 1, sender: 'You', text: newMessage }]);
       setNewMessage('');
     }
