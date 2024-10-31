@@ -1,12 +1,18 @@
-// ChatList.tsx
 import React from 'react';
+import { IChatList } from '../../interfaces/chat.interface';
 
-const ChatList: React.FC = () => {
-  const users = [
-    { id: 1, name: 'Ram', lastMessage: 'k hudai xa', profileImg: 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg' },
-    { id: 2, name: 'Shyam', lastMessage: 'hora??', profileImg: 'https://img.freepik.com/premium-photo/stylish-man-flat-vector-profile-picture-ai-generated_606187-310.jpg' },
-  ];
 
+interface ChatListProps{
+  chatList: IChatList[],
+  setChatId: React.Dispatch<React.SetStateAction<number | null>>
+}
+
+const ChatList: React.FC<ChatListProps> = ({chatList, setChatId}) => {
+console.log(chatList);
+const handleChatListClick = (chat: IChatList) => {
+  console.log(chat);
+  setChatId(chat.id);
+}
   return (
     <div className="w-1/3 p-4 border-r border-gray-300 h-[100vh]">
       <input
@@ -15,15 +21,17 @@ const ChatList: React.FC = () => {
         className="w-full p-2 mb-4 border rounded focus:outline-none"
       />
       <ul>
-        {users.map(user => (
-          <li key={user.id} className="flex items-center p-2 mb-2 cursor-pointer hover:bg-gray-100">
-            <img src={user.profileImg} alt={`${user.name} profile`} className="w-10 h-10 rounded-full mr-3" />
-            <div>
-              <p className="font-semibold">{user.name}</p>
-              <p className="text-gray-500 text-sm">{user.lastMessage}</p>
+        {
+          chatList.map((chat)=>(<li onClick={()=>handleChatListClick(chat)}>
+            <div className='flex flex-row items-center mb-3'>
+              <img src='https://img.freepik.com/free-photo/portrait-man-laughing_23-2148859448.jpg' className='w-8 h-8 rounded-full mr-2' alt='ProfilePicture'/>
+              <div className='flex flex-col justify-center'>
+                <p>{chat.type === 'received' ? `${chat.sender.email}`: `${chat.receiver.email}`}</p>
+                <p>{chat.type === 'received' ? `${chat.message}`: `You: ${chat.message}`}</p>
+              </div>
             </div>
-          </li>
-        ))}
+          </li>))
+        }
       </ul>
     </div>
   );
