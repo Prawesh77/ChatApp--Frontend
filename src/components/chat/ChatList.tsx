@@ -8,10 +8,9 @@ interface ChatListProps{
 }
 
 const ChatList: React.FC<ChatListProps> = ({chatList, setChatId}) => {
-console.log(chatList);
-const handleChatListClick = (chat: IChatList) => {
-  console.log(chat);
-  setChatId(chat.id);
+
+  const handleChatListClick = (chat: IChatList) => {
+  setChatId(chat.chat.id);
 }
   return (
     <div className="w-1/3 p-4 border-r border-gray-300 h-[100vh]">

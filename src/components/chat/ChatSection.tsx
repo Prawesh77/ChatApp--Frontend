@@ -1,26 +1,97 @@
-import React, {useState } from 'react';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 
-interface ChatSectionProps{
-  chatId: number | null
+interface Message {
+  id: number;
+  createdAt: string;
+  isSeen: boolean;
+  message: string;
+  receiver: string;
+  sender: string;
+  type: 'sent' | 'received';
 }
 
-const ChatSection: React.FC<ChatSectionProps> = ({chatId}) => {
- //fetch chat of that chat Id and assign using setMessages
-  const [messages, setMessages] = useState<string[] | null>([]);
+interface ChatSectionProps {
+  chatId: number | null;
+}
+
+const ChatSection: React.FC<ChatSectionProps> = ({ chatId }) => {
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  console.log(chatId)
-  const handleSendMessage = () => {
+
+  const handleSendMessage = async () => {
     if (newMessage !== '') {
-      setMessages((prevMessage)=>(prevMessage ? [...prevMessage, newMessage] : [newMessage]));
+      // Temporarily add the new message to the state
+      const newMessageObject: Message = {
+        id: Date.now(), // Temporary ID; you should get this from the response after sending it to the server
+        createdAt: new Date().toISOString(),
+        isSeen: false,
+        message: newMessage,
+        receiver: '', // Populate this based on your application logic
+        sender: 'your-email@example.com', // Replace with the actual sender email
+        type: 'sent',
+      };
+
+      setMessages((prevMessages) => [...prevMessages, newMessageObject]);
       setNewMessage('');
+
+      // Optionally send the message to the server
+      try {
+        await axios.post(`http://localhost:3000/chat/send-message`, {
+          chatId,
+          message: newMessage,
+          sender: 'your-email@example.com', // Replace with the actual sender email
+        }, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+      } catch (error) {
+        console.error("Failed to send message", error);
+      }
     }
   };
 
+  useEffect(() => {
+    const getMessages = async () => {
+      if (!chatId) return; // Exit if chatId is null
+
+      try {
+        const response = await axios.get(`http://localhost:3000/chat/get-message?chatId=${chatId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+        setMessages(response.data); // Assuming the response is in the correct format
+      } catch (error) {
+        console.error("Failed to retrieve messages", error);
+      }
+    };
+
+    getMessages();
+  }, [chatId]);
+
+  if (!chatId) {
+    return (
+      <div>
+        <p>Select a chat to start a conversation</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-2/3 p-4 flex flex-col">
       <div className="flex-1 overflow-y-auto mb-4">
-        {messages}
+        {messages.map((msg) => (
+          <div key={msg.id} className={`flex mb-2 ${msg.type === 'sent' ? 'justify-end' : 'justify-start'}`}>
+            <div
+              className={`p-2 rounded-lg max-w-xs ${msg.type === 'sent' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'}`}
+            >
+              <p className="text-sm">{msg.message}</p>
+              <span className="text-xs text-gray-500">{new Date(msg.createdAt).toLocaleTimeString()}</span>
+            </div>
+          </div>
+        ))}
       </div>
       <div className="flex mb-4 w-full">
         <input
