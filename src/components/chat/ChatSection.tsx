@@ -2,12 +2,10 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 
 interface Message {
-  id: number;
+  id?: number;
   createdAt: string;
-  isSeen: boolean;
+  isSeen?: boolean;
   message: string;
-  receiver: string;
-  sender: string;
   type: 'sent' | 'received';
 }
 
@@ -21,26 +19,22 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId }) => {
 
   const handleSendMessage = async () => {
     if (newMessage !== '') {
-      // Temporarily add the new message to the state
+
       const newMessageObject: Message = {
-        id: Date.now(), // Temporary ID; you should get this from the response after sending it to the server
+        id: Date.now(),
         createdAt: new Date().toISOString(),
         isSeen: false,
         message: newMessage,
-        receiver: '', // Populate this based on your application logic
-        sender: 'your-email@example.com', // Replace with the actual sender email
         type: 'sent',
       };
 
       setMessages((prevMessages) => [...prevMessages, newMessageObject]);
       setNewMessage('');
 
-      // Optionally send the message to the server
       try {
         await axios.post(`http://localhost:3000/chat/send-message`, {
           chatId,
           message: newMessage,
-          sender: 'your-email@example.com', // Replace with the actual sender email
         }, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
@@ -54,7 +48,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId }) => {
 
   useEffect(() => {
     const getMessages = async () => {
-      if (!chatId) return; // Exit if chatId is null
+      if (!chatId) return;
 
       try {
         const response = await axios.get(`http://localhost:3000/chat/get-message?chatId=${chatId}`, {
@@ -62,7 +56,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId }) => {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
           }
         });
-        setMessages(response.data); // Assuming the response is in the correct format
+        setMessages(response.data);
       } catch (error) {
         console.error("Failed to retrieve messages", error);
       }
