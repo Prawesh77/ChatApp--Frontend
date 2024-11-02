@@ -1,28 +1,26 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-
-interface Message {
-  id?: number;
-  createdAt: string;
-  isSeen?: boolean;
-  message: string;
-  type: 'sent' | 'received';
-}
+import { Socket } from 'socket.io-client';
+import { IMessage } from '../../interfaces/chat.interface';
 
 interface ChatSectionProps {
   chatId: number | null;
+  socket: Socket;
 }
 
-const ChatSection: React.FC<ChatSectionProps> = ({ chatId }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
+const ChatSection: React.FC<ChatSectionProps> = ({ chatId, socket}) => {
+  const [messages, setMessages] = useState<IMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [errorOnSend, setErrorOnSend] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const handleSendMessage = async () => {
     if (newMessage !== '') {
-
-      const newMessageObject: Message = {
+      const createdAt = new Date().toISOString()
+      const newMessageObject: IMessage = {
         id: Date.now(),
-        createdAt: new Date().toISOString(),
+        createdAt,
         isSeen: false,
         message: newMessage,
         type: 'sent',
@@ -30,10 +28,10 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId }) => {
 
       setMessages((prevMessages) => [...prevMessages, newMessageObject]);
       setNewMessage('');
-
       try {
         await axios.post(`http://localhost:3000/chat/send-message`, {
           chatId,
+          createdAt,
           message: newMessage,
         }, {
           headers: {
@@ -41,6 +39,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId }) => {
           }
         });
       } catch (error) {
+        setErrorOnSend("Failed to send message");
         console.error("Failed to send message", error);
       }
     }
@@ -49,7 +48,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId }) => {
   useEffect(() => {
     const getMessages = async () => {
       if (!chatId) return;
-
+      setIsLoading(true);
       try {
         const response = await axios.get(`http://localhost:3000/chat/get-message?chatId=${chatId}`, {
           headers: {
@@ -58,12 +57,30 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId }) => {
         });
         setMessages(response.data);
       } catch (error) {
+        setError("Failed to retrieve messages, Please try again")
         console.error("Failed to retrieve messages", error);
+      }finally{
+        setIsLoading(false);
       }
     };
 
     getMessages();
   }, [chatId]);
+
+  useEffect(() => {
+    const handleReceiveMessage = (data: IMessage) => {
+      console.log(data);
+      setMessages((prevMessages) => [...prevMessages, data]);
+
+    };
+  
+    socket.on('receive-message', handleReceiveMessage);
+  
+    return () => {
+      socket.off('receive-message', handleReceiveMessage);
+    };
+  }, []);
+
 
   if (!chatId) {
     return (
@@ -71,6 +88,13 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId }) => {
         <p>Select a chat to start a conversation</p>
       </div>
     );
+  }
+
+  if (isLoading) {
+    return <div className="p-4">Loading chats...</div>;
+  }
+  if (error) {
+    return <div className="text-red-500 p-4">{error}</div>;
   }
 
   return (
@@ -84,6 +108,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId }) => {
               <p className="text-sm">{msg.message}</p>
               <span className="text-xs text-gray-500">{new Date(msg.createdAt).toLocaleTimeString()}</span>
             </div>
+            {errorOnSend && <p className="text-sm text-red-500">{errorOnSend}</p>}
           </div>
         ))}
       </div>
