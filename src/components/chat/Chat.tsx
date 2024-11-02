@@ -83,6 +83,7 @@ const Chat: React.FC = () => {
     <div className="flex flex-row h-100vh">
       <ChatList
         chatList={messageList}
+        setChatList={setMessageList}
         setChatId={setChatId}
         error={error}
         isLoading={isLoading}
