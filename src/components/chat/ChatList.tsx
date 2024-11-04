@@ -1,6 +1,7 @@
 import React from "react";
 import { IChatList } from "../../interfaces/chat.interface";
 import axios from "axios";
+import { API } from "../../config/api.config";
 
 interface ChatListProps {
   chatList: IChatList[];
@@ -21,7 +22,7 @@ const ChatList: React.FC<ChatListProps> = ({
     setChatId(chat.chat.id);
     if (chat.type === "received") {
       axios.patch(
-        "http://localhost:3000/chat/seen-status",
+        `${API.HOST}${API.SEEN_STATUS}`,
         {chatId: chat.chat.id},
         {
           headers: {

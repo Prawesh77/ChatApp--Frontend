@@ -4,6 +4,7 @@ import ChatSection from "./ChatSection";
 import axios from "axios";
 import { io, Socket } from "socket.io-client";
 import { IChatList } from "../../interfaces/chat.interface";
+import { API } from "../../config/api.config";
 
 const Chat: React.FC = () => {
   const [messageList, setMessageList] = useState<IChatList[]>([]);
@@ -14,7 +15,7 @@ const Chat: React.FC = () => {
   
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
-    const socketInstance: Socket = io(`http://localhost:3000?token=${token}`);
+    const socketInstance: Socket = io(`${API.HOST}?token=${token}`);
 
     socketInstance.on("connect_error", (err) => {
       console.error("Socket connection error:", err);
@@ -55,7 +56,7 @@ const Chat: React.FC = () => {
         }
 
         const response = await axios.get(
-          "http://localhost:3000/chat/get-chat-list",
+          `${API.HOST}${API.GET_CHAT_LIST}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

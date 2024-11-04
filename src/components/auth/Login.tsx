@@ -1,5 +1,6 @@
 import axios from 'axios';
 import React, { useState } from 'react'
+import { API } from '../../config/api.config';
 
 interface ILoginProps{
   setIsLoggedIn: React.Dispatch<React.SetStateAction<string | null>>
@@ -16,7 +17,7 @@ const Login:React.FC<ILoginProps>= ({setIsLoggedIn}) => {
     e.preventDefault();
     console.log(login);
     try {
-      const response = await axios.post('http://localhost:3000/login', login);
+      const response = await axios.post(`${API.HOST}${API.LOGIN}`, login);
       const { token } = response.data;
       localStorage.setItem('accessToken', token);
       setIsLoggedIn(token);

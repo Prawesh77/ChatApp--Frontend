@@ -2,6 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Socket } from 'socket.io-client';
 import { IMessage } from '../../interfaces/chat.interface';
+import { API } from '../../config/api.config';
 
 interface ChatSectionProps {
   chatId: number | null;
@@ -29,7 +30,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId, socket}) => {
       setMessages((prevMessages) => [...prevMessages, newMessageObject]);
       setNewMessage('');
       try {
-        await axios.post(`http://localhost:3000/chat/send-message`, {
+        await axios.post(`${API.HOST}${API.SEND_MESSAGE}`, {
           chatId,
           createdAt,
           message: newMessage,
@@ -50,7 +51,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId, socket}) => {
       if (!chatId) return;
       setIsLoading(true);
       try {
-        const response = await axios.get(`http://localhost:3000/chat/get-message?chatId=${chatId}`, {
+        const response = await axios.get(`${API.HOST}${API.GET_MESSAGE}?chatId=${chatId}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
           }
@@ -71,7 +72,6 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId, socket}) => {
     const handleReceiveMessage = (data: IMessage) => {
       console.log(data);
       setMessages((prevMessages) => [...prevMessages, data]);
-
     };
   
     socket.on('receive-message', handleReceiveMessage);
@@ -98,8 +98,8 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId, socket}) => {
   }
 
   return (
-    <div className="w-2/3 p-4 flex flex-col">
-      <div className="flex-1 overflow-y-auto mb-4">
+    <div className="w-2/3 p-4 flex flex-col h-[100vh]">
+      <div className="flex-1 overflow-y-scroll mb-4">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex mb-2 ${msg.type === 'sent' ? 'justify-end' : 'justify-start'}`}>
             <div
