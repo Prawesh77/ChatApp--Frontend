@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Socket } from 'socket.io-client';
 import { IMessage } from '../../interfaces/chat.interface';
 import { API } from '../../config/api.config';
@@ -15,6 +15,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId, socket}) => {
   const [error, setError] = useState<string | null>(null);
   const [errorOnSend, setErrorOnSend] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
   const handleSendMessage = async () => {
     if (newMessage !== '') {
@@ -73,14 +74,19 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId, socket}) => {
       console.log(data);
       setMessages((prevMessages) => [...prevMessages, data]);
     };
-  
+
     socket.on('receive-message', handleReceiveMessage);
-  
+
     return () => {
       socket.off('receive-message', handleReceiveMessage);
     };
   }, []);
 
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   if (!chatId) {
     return (
@@ -99,11 +105,11 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId, socket}) => {
 
   return (
     <div className="w-2/3 p-4 flex flex-col h-[100vh]">
-      <div className="flex-1 overflow-y-scroll mb-4">
+      <div ref={chatContainerRef} className="flex-1 overflow-y-scroll mb-4">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex mb-2 ${msg.type === 'sent' ? 'justify-end' : 'justify-start'}`}>
             <div
-              className={`p-2 rounded-lg max-w-xs ${msg.type === 'sent' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'}`}
+              className={`p-2 rounded-lg max-w-[20rem] ${msg.type === 'sent' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'}`}
             >
               <p className="text-sm">{msg.message}</p>
               <span className="text-xs text-gray-500">{new Date(msg.createdAt).toLocaleTimeString()}</span>
