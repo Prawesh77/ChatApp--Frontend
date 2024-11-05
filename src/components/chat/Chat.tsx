@@ -5,21 +5,38 @@ import { io, Socket } from "socket.io-client";
 import { IChatList } from "../../interfaces/chat.interface";
 import { API } from "../../config/api.config";
 import Api from "../../api/apiClient";
+import { useQuery } from "@tanstack/react-query";
 
 const Chat: React.FC = () => {
   const [messageList, setMessageList] = useState<IChatList[]>([]);
   const [chatId, setChatId] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [errorSocket, setErrorSocket] = useState<string | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
-  
+
+  const getChatList = async () => {
+    const response = await Api.get(`${API.GET_CHAT_LIST}`);
+    return response.data
+};
+console.log('rendered')
+  const { data, error, isLoading } = useQuery({
+    queryKey: ['chatList'],
+    queryFn: getChatList
+  });
+
+  useEffect(() => {
+    if (data) {
+      setMessageList(data);
+    }
+  }, [data]);
+
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     const socketInstance: Socket = io(`http://localhost:3001?token=${token}`);
 
     socketInstance.on("connect_error", (err) => {
       console.error("Socket connection error:", err);
-      setError("Failed to connect to chat server");
+      // setErrorSocket("Failed to connect to chat server");
+      setErrorSocket(null);
     });
 
     socketInstance.on("chat-list", (data: IChatList) => {
@@ -37,35 +54,14 @@ const Chat: React.FC = () => {
         }
       });
     });
-
     setSocket(socketInstance);
-
     return () => {
       socketInstance.disconnect();
     };
   }, []);
 
-  useEffect(() => {
-    const getChatList = async () => {
-        setIsLoading(true);
-        const token = localStorage.getItem("accessToken");
-        if (!token) {
-          setError("No authentication token found");
-          return;
-        }
+    
 
-        const response = await Api.get(`${API.GET_CHAT_LIST}`);
-        if(!response.status){ 
-          setError("Failed to load chat list");
-          setIsLoading(false);
-          return 
-        }
-        setMessageList(response.data);
-        setIsLoading(false);
-    };
-
-    getChatList();
-  }, []);
 
   if (!socket) {
     return <div className="p-4">Connecting to chat server...</div>;
@@ -78,6 +74,7 @@ const Chat: React.FC = () => {
         setChatList={setMessageList}
         setChatId={setChatId}
         error={error}
+        errorSocket={errorSocket}
         isLoading={isLoading}
       />
       <ChatSection chatId={chatId} socket={socket} />

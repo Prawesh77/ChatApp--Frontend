@@ -16,7 +16,7 @@ const createPrivateAxiosInstance = (): AxiosInstance => {
     baseURL: API.HOST || 'http://localhost:3001',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + localStorage.getItem('accessToken') || 'null',
+      'Authorization': 'Bearer ' + localStorage.getItem('accessToken'),
     },
   });
   return instance;
@@ -41,7 +41,7 @@ class Api {
 
       const response = await Axios.get(url.toString());
       return {
-        data: response?.data || response.data.data,
+        data: response?.data || response.data.data || null,
         message: 'Fetch successfully',
         status: true,
       };
