@@ -15,7 +15,7 @@ const Chat: React.FC = () => {
   
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
-    const socketInstance: Socket = io(`${API.HOST}?token=${token}`);
+    const socketInstance: Socket = io(`http://localhost:3001?token=${token}`);
 
     socketInstance.on("connect_error", (err) => {
       console.error("Socket connection error:", err);
