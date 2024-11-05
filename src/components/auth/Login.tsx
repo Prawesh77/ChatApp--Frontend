@@ -19,8 +19,8 @@ const Login:React.FC<ILoginProps>= ({setIsLoggedIn}) => {
     try {
       const response = await axios.post(`${API.HOST}${API.LOGIN}`, login);
       const { token } = response.data;
-      localStorage.setItem('accessToken', token);
-      setIsLoggedIn(token);
+      localStorage.setItem('accessToken', token);      setIsLoggedIn(token);
+      window.location.href = '/chat';
     } catch (error) {
       console.log(error)
     }
