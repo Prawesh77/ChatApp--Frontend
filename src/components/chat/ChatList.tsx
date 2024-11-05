@@ -7,7 +7,8 @@ interface ChatListProps {
   chatList: IChatList[];
   setChatList: React.Dispatch<React.SetStateAction<IChatList[]>>;
   setChatId: React.Dispatch<React.SetStateAction<number | null>>;
-  error: string | null;
+  error: Error | null;
+  errorSocket: string | null;
   isLoading: boolean;
 }
 
@@ -15,9 +16,11 @@ const ChatList: React.FC<ChatListProps> = ({
   chatList,
   setChatId,
   error,
+  errorSocket,
   isLoading,
   setChatList,
 }) => {
+
   const handleChatListClick = (chat: IChatList) => {
     setChatId(chat.chat.id);
     if (chat.type === "received") {
@@ -34,8 +37,8 @@ const ChatList: React.FC<ChatListProps> = ({
   if (isLoading) {
     return <div className="p-4">Loading chats...</div>;
   }
-  if (error) {
-    return <div className="text-red-500 p-4">{error}</div>;
+  if (error || errorSocket) {
+    return <div className="text-red-500 p-4">{error?.message || errorSocket}</div>;
   }
   return (
     <div className="w-1/3 p-4 border-r border-gray-300 h-[100vh]">
