@@ -3,12 +3,18 @@ import { Socket } from "socket.io-client";
 import { IMessage } from "../../interfaces/chat.interface";
 import { API } from "../../config/api.config";
 import Api from "../../api/apiClient";
+import { useMutation } from "@tanstack/react-query";
 
 interface ChatSectionProps {
   chatId: number | null;
   socket: Socket;
 }
 
+interface sendMessage {
+  chatId: number | null;
+  createdAt: string;
+  newMessage: string;
+}
 const ChatSection: React.FC<ChatSectionProps> = ({ chatId, socket }) => {
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -16,6 +22,37 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId, socket }) => {
   const [errorOnSend, setErrorOnSend] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const sendMutation = useMutation({
+    mutationFn: ({ chatId, createdAt, newMessage }: sendMessage) =>
+      Api.post(`${API.SEND_MESSAGE}`, {
+        chatId,
+        createdAt,
+        message: newMessage,
+      }),
+    onError: () => {
+      console.log("Error Caught");
+      setErrorOnSend("Failed to send message");
+    },
+  });
+
+  const getMessageMutation = useMutation({
+    mutationFn: (chatId: number) =>Api.get(`${API.GET_MESSAGE}`, {chatId}),
+    onSuccess: (data) => {
+      console.log(data);
+      if(!data.status){
+        setError("Failed to retrieve messages, Please try again");
+        setIsLoading(false);
+        return;
+      }
+      setMessages(data.data);
+      setIsLoading(false);
+    },
+    onError: () => {
+      setError("Failed to retrieve messages, Please try again");
+      setIsLoading(false);
+    },
+  });
 
   const handleSendMessage = async () => {
     if (newMessage !== "") {
@@ -29,33 +66,20 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId, socket }) => {
       };
       setMessages((prevMessages) => [...prevMessages, newMessageObject]);
       setNewMessage("");
-      const response = await Api.post(`${API.SEND_MESSAGE}`, {
-        chatId,
-        createdAt,
-        message: newMessage,
-      });
-      if (!response.status) return setErrorOnSend("Failed to send message");
+      sendMutation.mutateAsync({ chatId, createdAt, newMessage });
     }
   };
+  const getMessages = async () => {
+    console.log("Get Message Called")
+    if (!chatId) return;
+    setIsLoading(true);
+    getMessageMutation.mutateAsync(chatId);
+  };
 
-  useEffect(() => {
-    const getMessages = async () => {
-      if (!chatId) return;
-      setIsLoading(true);
-      const response = await Api.get(`${API.GET_MESSAGE}`, {
-        chatId,
-      });
-      if (!response.status) {
-        setError("Failed to retrieve messages, Please try again");
-        setIsLoading(false);
-        return;
-      }
-      setMessages(response.data);
-      setIsLoading(false);
-    };
-
-    getMessages();
-  }, [chatId]);
+  getMessages();
+  // useEffect(() => {
+    
+  // }, [chatId,getMessageMutation]);
 
   useEffect(() => {
     const handleReceiveMessage = (data: IMessage) => {
