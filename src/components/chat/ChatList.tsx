@@ -1,7 +1,7 @@
 import React from "react";
 import { IChatList } from "../../interfaces/chat.interface";
-import axios from "axios";
 import { API } from "../../config/api.config";
+import Api from "../../api/apiClient";
 
 interface ChatListProps {
   chatList: IChatList[];
@@ -21,15 +21,7 @@ const ChatList: React.FC<ChatListProps> = ({
   const handleChatListClick = (chat: IChatList) => {
     setChatId(chat.chat.id);
     if (chat.type === "received") {
-      axios.patch(
-        `${API.HOST}${API.SEEN_STATUS}`,
-        {chatId: chat.chat.id},
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
-      );
+      Api.patch(`${API.SEEN_STATUS}`, { chatId: chat.chat.id });
       setChatList((prevChatList)=>{
         return prevChatList.map((chatt) =>
           chatt.chat.id === chat.chat.id

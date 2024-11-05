@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import ChatList from "./ChatList";
 import ChatSection from "./ChatSection";
-import axios from "axios";
 import { io, Socket } from "socket.io-client";
 import { IChatList } from "../../interfaces/chat.interface";
 import { API } from "../../config/api.config";
+import Api from "../../api/apiClient";
 
 const Chat: React.FC = () => {
   const [messageList, setMessageList] = useState<IChatList[]>([]);
@@ -47,7 +47,6 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     const getChatList = async () => {
-      try {
         setIsLoading(true);
         const token = localStorage.getItem("accessToken");
         if (!token) {
@@ -55,22 +54,14 @@ const Chat: React.FC = () => {
           return;
         }
 
-        const response = await axios.get(
-          `${API.HOST}${API.GET_CHAT_LIST}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
+        const response = await Api.get(`${API.GET_CHAT_LIST}`);
+        if(!response.status){ 
+          setError("Failed to load chat list");
+          setIsLoading(false);
+          return 
+        }
         setMessageList(response.data);
-      } catch (err) {
-        console.error("Failed to fetch chat list:", err);
-        setError("Failed to load chat list");
-      } finally {
         setIsLoading(false);
-      }
     };
 
     getChatList();
