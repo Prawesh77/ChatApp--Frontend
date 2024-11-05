@@ -1,49 +1,40 @@
-import axios from 'axios';
-import React, { useEffect, useRef, useState } from 'react';
-import { Socket } from 'socket.io-client';
-import { IMessage } from '../../interfaces/chat.interface';
-import { API } from '../../config/api.config';
+import React, { useEffect, useRef, useState } from "react";
+import { Socket } from "socket.io-client";
+import { IMessage } from "../../interfaces/chat.interface";
+import { API } from "../../config/api.config";
+import Api from "../../api/apiClient";
 
 interface ChatSectionProps {
   chatId: number | null;
   socket: Socket;
 }
 
-const ChatSection: React.FC<ChatSectionProps> = ({ chatId, socket}) => {
+const ChatSection: React.FC<ChatSectionProps> = ({ chatId, socket }) => {
   const [messages, setMessages] = useState<IMessage[]>([]);
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [errorOnSend, setErrorOnSend] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
   const handleSendMessage = async () => {
-    if (newMessage !== '') {
-      const createdAt = new Date().toISOString()
+    if (newMessage !== "") {
+      const createdAt = new Date().toISOString();
       const newMessageObject: IMessage = {
         id: Date.now(),
         createdAt,
         isSeen: false,
         message: newMessage,
-        type: 'sent',
+        type: "sent",
       };
-
       setMessages((prevMessages) => [...prevMessages, newMessageObject]);
-      setNewMessage('');
-      try {
-        await axios.post(`${API.HOST}${API.SEND_MESSAGE}`, {
-          chatId,
-          createdAt,
-          message: newMessage,
-        }, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-          }
-        });
-      } catch (error) {
-        setErrorOnSend("Failed to send message");
-        console.error("Failed to send message", error);
-      }
+      setNewMessage("");
+      const response = await Api.post(`${API.SEND_MESSAGE}`, {
+        chatId,
+        createdAt,
+        message: newMessage,
+      });
+      if (!response.status) return setErrorOnSend("Failed to send message");
     }
   };
 
@@ -51,19 +42,16 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId, socket}) => {
     const getMessages = async () => {
       if (!chatId) return;
       setIsLoading(true);
-      try {
-        const response = await axios.get(`${API.HOST}${API.GET_MESSAGE}?chatId=${chatId}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-          }
-        });
-        setMessages(response.data);
-      } catch (error) {
-        setError("Failed to retrieve messages, Please try again")
-        console.error("Failed to retrieve messages", error);
-      }finally{
+      const response = await Api.get(`${API.GET_MESSAGE}`, {
+        chatId,
+      });
+      if (!response.status) {
+        setError("Failed to retrieve messages, Please try again");
         setIsLoading(false);
+        return;
       }
+      setMessages(response.data);
+      setIsLoading(false);
     };
 
     getMessages();
@@ -75,16 +63,17 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId, socket}) => {
       setMessages((prevMessages) => [...prevMessages, data]);
     };
 
-    socket.on('receive-message', handleReceiveMessage);
+    socket.on("receive-message", handleReceiveMessage);
 
     return () => {
-      socket.off('receive-message', handleReceiveMessage);
+      socket.off("receive-message", handleReceiveMessage);
     };
   }, []);
 
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
@@ -107,14 +96,27 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId, socket}) => {
     <div className="w-2/3 p-4 flex flex-col h-[100vh]">
       <div ref={chatContainerRef} className="flex-1 overflow-y-scroll mb-4">
         {messages.map((msg) => (
-          <div key={msg.id} className={`flex mb-2 ${msg.type === 'sent' ? 'justify-end' : 'justify-start'}`}>
+          <div
+            key={msg.id}
+            className={`flex mb-2 ${
+              msg.type === "sent" ? "justify-end" : "justify-start"
+            }`}
+          >
             <div
-              className={`p-2 rounded-lg max-w-[20rem] ${msg.type === 'sent' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'}`}
+              className={`p-2 rounded-lg max-w-[20rem] ${
+                msg.type === "sent"
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-200 text-black"
+              }`}
             >
               <p className="text-sm">{msg.message}</p>
-              <span className="text-xs text-gray-500">{new Date(msg.createdAt).toLocaleTimeString()}</span>
+              <span className="text-xs text-gray-500">
+                {new Date(msg.createdAt).toLocaleTimeString()}
+              </span>
             </div>
-            {errorOnSend && <p className="text-sm text-red-500">{errorOnSend}</p>}
+            {errorOnSend && (
+              <p className="text-sm text-red-500">{errorOnSend}</p>
+            )}
           </div>
         ))}
       </div>
@@ -126,7 +128,10 @@ const ChatSection: React.FC<ChatSectionProps> = ({ chatId, socket}) => {
           placeholder="Type a message..."
           className="flex-1 p-2 border rounded focus:outline-none"
         />
-        <button onClick={handleSendMessage} className="ml-2 px-4 py-2 bg-blue-500 text-white rounded">
+        <button
+          onClick={handleSendMessage}
+          className="ml-2 px-4 py-2 bg-blue-500 text-white rounded"
+        >
           Send
         </button>
       </div>
